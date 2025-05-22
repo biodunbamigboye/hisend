@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>User Profile</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 text-gray-800">
+  <div class="max-w-2xl  mx-auto my-10 p-6 bg-white shadow-xl rounded-2xl">
+    <div class="flex items-center justify-between mb-6">
+      <h2 class="text-2xl font-bold">User Profile</h2>
+      <button class="text-sm text-blue-600 hover:underline">Edit Profile</button>
+    </div>
+
+    <div class="space-y-4">
+      <!-- Full Name -->
+      <div class="flex justify-between items-center">
+        <div>
+          <p class="text-sm text-gray-500">Full Name</p>
+          <p class="font-medium text-lg" id="user-full-name">John Doe</p>
+        </div>
+      </div>
+
+      <!-- First Name -->
+      <div class="flex justify-between items-center">
+        <div>
+          <p class="text-sm text-gray-500">First Name</p>
+          <p class="font-medium" id="user-first-name">John</p>
+        </div>
+      </div>
+
+      <!-- Last Name -->
+      <div class="flex justify-between items-center">
+        <div>
+          <p class="text-sm text-gray-500">Last Name</p>
+          <p class="font-medium" id="user-last-name">Doe</p>
+        </div>
+      </div>
+
+      <!-- Email -->
+      <div class="flex justify-between items-center">
+        <div>
+          <p class="text-sm text-gray-500">Email</p>
+          <p class="font-medium" id="user-email" >john.doe@example.com</p>
+        </div>
+        <span id="email-status" class="inline-flex items-center px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-700">
+          ✅ Verified
+        </span>
+        <button
+          id="verify-email-btn"
+          class="ml-4 px-3 py-1 text-xs font-semibold rounded bg-blue-500 text-white hover:bg-blue-600 transition"
+          style="display:none;"
+        >
+          Send Email Verification
+        </button>
+      </div>
+      <div id="code-verification-form" class="mt-2 flex items-center space-x-2" style="display:none;">
+        <input
+          type="text"
+          id="verification-code-input"
+          class="border rounded px-2 py-1 text-sm"
+          placeholder="Enter verification code"
+        />
+        <button
+          id="submit-code-btn"
+          class="px-3 py-1 text-xs font-semibold rounded bg-green-500 text-white hover:bg-green-600 transition"
+        >
+          Verify Code
+        </button>
+      </div>
+
+      <!-- Phone -->
+      <div class="flex justify-between items-center">
+        <div>
+          <p class="text-sm text-gray-500">Phone</p>
+          <p class="font-medium" id="user-phone">+1 234 567 8901</p>
+        </div>
+        <span class="inline-flex items-center px-2 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800">
+          ⚠️ Not Verified
+        </span>
+      </div>
+
+      <!-- Gender -->
+      <div class="flex justify-between items-center">
+        <div>
+          <p class="text-sm text-gray-500">Gender</p>
+          <p class="font-medium" id="user-gender">Male</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+  <script>
+
+    let user; // Placeholder for user data'
+    let verificationRef;
+
+        const emailStatus = document.getElementById('email-status');
+    const verifyBtn = document.getElementById('verify-email-btn');
+    const codeForm = document.getElementById('code-verification-form');
+    const codeInput = document.getElementById('verification-code-input');
+    const submitCodeBtn = document.getElementById('submit-code-btn');
+    const userEmail = document.getElementById('user-email');
+
+        axios
+      .get(
+        "https://core.hisend.hunnovate.com/api/v1/projects/e_commerce_app/auth/user?api_key=lntX8uGyhVAYkJQTLMHDDXGQ",
+        {
+          headers: {
+            Authorization: "Bearer " + sessionStorage.getItem("token"),
+          },
+        }
+      )
+      .then((response) => {
+        user = response.data.data;
+
+        // toggle email verification button based on user data
+         updateEmailUI();
+
+        document.getElementById("user-full-name").textContent = user.full_name;
+        document.getElementById("user-first-name").textContent = user.first_name;
+        document.getElementById("user-last-name").textContent = user.last_name;
+        document.getElementById("user-email").textContent = user.email;
+        document.getElementById("user-phone").textContent = user.phone;
+        document.getElementById("user-gender").textContent = user.gender;
+
+      })
+      .catch((error) => {
+        //redirect to login if token is invalid
+        if (error.response && error.response.status === 401) {
+          alert("Unable to get authenticated user. Please log in again.");
+          window.location.href = "login.html";
+        }
+      });
+    // Simulate verification status (replace with real logic)
+    let isEmailVerified = false; // Set to false to show verify button
+
+    const updateEmailUI = () => {
+
+      if (user?.email_verified_at) {
+        emailStatus.textContent = "✅ Verified";
+        emailStatus.className = "inline-flex items-center px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-700";
+        verifyBtn.style.display = "none";
+        codeForm.style.display = "none";
+      } else {
+        emailStatus.textContent = "⚠️ Not Verified";
+        emailStatus.className = "inline-flex items-center px-2 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800";
+        verifyBtn.style.display = "";
+      }
+    }
+
+
+
+    verifyBtn.addEventListener('click', () => {
+      verifyBtn.disabled = true;
+      verifyBtn.textContent = "Sending...";
+      // Call API to send verification email
+
+      axios.get('https://core.hisend.hunnovate.com/api/v1/otp/send?project_id=e_commerce_app&api_key=lntX8uGyhVAYkJQTLMHDDXGQ&customer_identifier=' + user.email + '&channel=email')
+      .then(response => {
+        verificationRef = response.data.data.reference;
+        codeForm.style.display = "";
+        codeInput.value = "";
+      })
+      .catch(() => {
+        alert("Failed to send verification email.");
+      })
+      .finally(() => {
+        verifyBtn.disabled = false;
+        verifyBtn.textContent = "Send Email Verification";
+      });
+    });
+
+    submitCodeBtn.addEventListener('click', () => {
+      const code = codeInput.value.trim();
+      if (!code) {
+        alert("Please enter the verification code.");
+        return;
+      }
+      submitCodeBtn.disabled = true;
+      submitCodeBtn.textContent = "Verifying...";
+      // Call API to verify code
+      axios.put('https://core.hisend.hunnovate.com/api/v1/projects/e_commerce_app/auth/email/verify?api_key=lntX8uGyhVAYkJQTLMHDDXGQ',{
+        otp_reference: verificationRef,
+        otp: code,
+        email: user.email
+      })
+      .then(() => {
+        alert("Email verified successfully!");
+        isEmailVerified = true;
+        updateEmailUI();
+      })
+      .catch(() => {
+        alert("Invalid or expired code.");
+      })
+      .finally(() => {
+        submitCodeBtn.disabled = false;
+        submitCodeBtn.textContent = "Verify Code";
+      });
+    });
+  </script>
+</body>
+</html>
