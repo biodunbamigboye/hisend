@@ -105,7 +105,7 @@
     <script>
       let user;
       let addresses = [];
-      const editingId = null; 
+      let editingId = null; 
       const addressList = document.getElementById("address-list");
       axios
         .get(
@@ -129,7 +129,7 @@
           }
         });
 
-      const submitForm = () => {
+      const createAddress = () => {
         axios
           .post(
             `https://core.hisend.hunnovate.com/api/v1/projects/e_commerce_app/tables/user_addresses/records?api_key=lntX8uGyhVAYkJQTLMHDDXGQ`,
@@ -160,11 +160,46 @@
           });
       };
 
+      const updateAddress = () => {
+        axios
+          .put(
+            `https://core.hisend.hunnovate.com/api/v1/projects/e_commerce_app/tables/user_addresses/records/${editingId}?api_key=lntX8uGyhVAYkJQTLMHDDXGQ`,
+            {
+              address_line: document.getElementById("address-line").value,
+              city: document.getElementById("city").value,
+              state: document.getElementById("state").value,
+              zip: document.getElementById("zip").value,
+              country: document.getElementById("country").value,
+            },
+            {
+              headers: {
+                Authorization: "Bearer " + sessionStorage.getItem("token"),
+              },
+            }
+          )
+          .then((response) => {
+            alert("Address updated successfully!");
+            addresses = addresses.map((addr) =>
+              addr.id === editingId ? response.data.data : addr
+            );
+            cancelEdit();
+            getAddresses();
+          })
+          .catch((error) => {
+            alert(error.response?.data?.message || "Error updating address");
+            console.error("Error updating address:", error);
+          });
+      };
+
       document
         .getElementById("address-form")
         .addEventListener("submit", (e) => {
           e.preventDefault();
-          submitForm();
+          if (editingId) {
+            updateAddress();
+          } else {
+            createAddress();
+          }
         });
 
         const getAddresses = () => {
@@ -211,16 +246,65 @@
         `;
           addressList.appendChild(li);
         });
-        /*
+       
         // Attach event listeners
         document.querySelectorAll(".edit-btn").forEach((btn) => {
           btn.onclick = () => startEditAddress(btn.dataset.idx);
         });
+        
         document.querySelectorAll(".delete-btn").forEach((btn) => {
           btn.onclick = () => deleteAddress(btn.dataset.idx);
         });
-        */
       }
+
+      const startEditAddress = (id) => {
+        const address = addresses.find((addr) => addr.id === id);
+        if (!address) return;
+
+        document.getElementById("address-id").value = address.id;
+        document.getElementById("address-line").value = address.address_line;
+        document.getElementById("city").value = address.city;
+        document.getElementById("state").value = address.state;
+        document.getElementById("zip").value = address.zip;
+        document.getElementById("country").value = address.country;
+
+        document.getElementById("submit-btn").textContent = "Update Address";
+        document.getElementById("cancel-btn").classList.remove("hidden");
+        editingId = id;
+
+        // add event listener for cancel button
+        document.getElementById("cancel-btn").onclick = cancelEdit;
+      }
+
+      const cancelEdit = () => {
+        document.getElementById("address-form").reset();
+        document.getElementById("submit-btn").textContent = "Add Address";
+        document.getElementById("cancel-btn").classList.add("hidden");
+        editingId = null;
+      };
+
+      const deleteAddress = (id) => {
+        if (!confirm("Are you sure you want to delete this address?")) return;
+
+        axios
+          .delete(
+            `https://core.hisend.hunnovate.com/api/v1/projects/e_commerce_app/tables/user_addresses/records/${id}?api_key=lntX8uGyhVAYkJQTLMHDDXGQ`,
+            {
+              headers: {
+                Authorization: "Bearer " + sessionStorage.getItem("token"),
+              },
+            }
+          )
+          .then((response) => {
+            alert("Address deleted successfully!");
+            addresses = addresses.filter((addr) => addr.id !== id);
+            renderAddresses();
+          })
+          .catch((error) => {
+            alert(error.response?.data?.message || "Error deleting address");
+            console.error("Error deleting address:", error);
+          });
+      };
     </script>
   </body>
 </html>
