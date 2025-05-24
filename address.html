@@ -96,6 +96,7 @@
         <h3 class="text-lg font-semibold mb-3">Saved Addresses</h3>
         <ul id="address-list" class="space-y-4">
           <!-- Addresses will be rendered here -->
+  
         </ul>
       </div>
     </div>
@@ -103,6 +104,9 @@
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
     <script>
       let user;
+      let addresses = [];
+      const editingId = null; 
+      const addressList = document.getElementById("address-list");
       axios
         .get(
           "https://core.hisend.hunnovate.com/api/v1/projects/e_commerce_app/auth/user?api_key=lntX8uGyhVAYkJQTLMHDDXGQ",
@@ -115,6 +119,7 @@
         .then((response) => {
           user = response.data.data;
           document.getElementById("user-name").textContent = user.full_name;
+             getAddresses();
         })
         .catch((error) => {
           //redirect to login if token is invalid
@@ -125,37 +130,97 @@
         });
 
       const submitForm = () => {
-        axios.post(
-          `https://core.hisend.hunnovate.com/api/v1/projects/e_commerce_app/tables/user_addresses/records?api_key=lntX8uGyhVAYkJQTLMHDDXGQ`,
-          {
-            address_line: document.getElementById("address-line").value,
-            city: document.getElementById("city").value,
-            state: document.getElementById("state").value,
-            zip: document.getElementById("zip").value,
-            country: document.getElementById("country").value,
-          },
-          {
-            headers: {
-              Authorization: "Bearer " + sessionStorage.getItem("token"),
+        axios
+          .post(
+            `https://core.hisend.hunnovate.com/api/v1/projects/e_commerce_app/tables/user_addresses/records?api_key=lntX8uGyhVAYkJQTLMHDDXGQ`,
+            {
+              address_line: document.getElementById("address-line").value,
+              city: document.getElementById("city").value,
+              state: document.getElementById("state").value,
+              zip: document.getElementById("zip").value,
+              country: document.getElementById("country").value,
+              user_id: user.id, 
             },
-          }
-        )
-        .then((response) => {
-          alert("Address added successfully!");
-          document.getElementById("address-form").reset();
-          // Optionally, you can refresh the address list here
-        })
-        .catch((error) => {
-          alert(error.response?.data?.message || "Error adding address");
-          console.error("Error adding address:", error);
-        });
+            {
+              headers: {
+                Authorization: "Bearer " + sessionStorage.getItem("token"),
+              },
+            }
+          )
+          .then((response) => {
+            alert("Address added successfully!");
+            document.getElementById("address-form").reset();
+            addresses.push(response.data.data);
+            renderAddresses();
+            // Optionally, you can refresh the address list here
+          })
+          .catch((error) => {
+            alert(error.response?.data?.message || "Error adding address");
+            console.error("Error adding address:", error);
+          });
       };
 
-      document.getElementById("address-form").addEventListener("submit", (e) => {
-        e.preventDefault();
-        submitForm();
-      });
+      document
+        .getElementById("address-form")
+        .addEventListener("submit", (e) => {
+          e.preventDefault();
+          submitForm();
+        });
 
+        const getAddresses = () => {
+          axios
+            .get(
+              "https://core.hisend.hunnovate.com/api/v1/projects/e_commerce_app/tables/user_addresses/records?api_key=lntX8uGyhVAYkJQTLMHDDXGQ" + '&user_id=' + user.id,
+              {
+                headers: {
+                  Authorization: "Bearer " + sessionStorage.getItem("token"),
+                },
+              }
+            )
+            .then((response) => {
+              addresses = response.data.data;
+              renderAddresses();
+            })
+            .catch((error) => {
+              console.error("Error fetching addresses:", error);
+            });
+        };
+
+      // Render address list
+      function renderAddresses() {
+        addressList.innerHTML = "";
+        if (addresses.length === 0) {
+          addressList.innerHTML =
+            '<li class="text-gray-500 text-center">No addresses saved.</li>';
+          return;
+        }
+        
+        addresses.forEach((addr, idx) => {
+          const li = document.createElement("li");
+          li.className =
+            "p-4 bg-gray-50 rounded shadow flex flex-col md:flex-row md:items-center md:justify-between gap-2";
+          li.innerHTML = `
+          <div>
+            <div class="font-semibold">${addr.address_line}</div>
+            <div class="text-sm text-gray-600">${addr.city}, ${addr.state}, ${addr.zip}, ${addr.country}</div>
+          </div>
+          <div class="flex gap-2 mt-2 md:mt-0">
+            <button class="edit-btn bg-yellow-400 hover:bg-yellow-500 text-white px-3 py-1 rounded" data-idx="${addr.id}">Edit</button>
+            <button class="delete-btn bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded" data-idx="${addr.id}">Delete</button>
+          </div>
+        `;
+          addressList.appendChild(li);
+        });
+        /*
+        // Attach event listeners
+        document.querySelectorAll(".edit-btn").forEach((btn) => {
+          btn.onclick = () => startEditAddress(btn.dataset.idx);
+        });
+        document.querySelectorAll(".delete-btn").forEach((btn) => {
+          btn.onclick = () => deleteAddress(btn.dataset.idx);
+        });
+        */
+      }
     </script>
   </body>
 </html>
