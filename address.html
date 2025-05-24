@@ -70,9 +70,13 @@
             <input
               id="country"
               type="text"
+              list="country-list"
               class="w-full border rounded px-3 py-2"
               required
             />
+            <datalist id="country-list">
+              <!-- Country options will be populated here -->
+            </datalist>
           </div>
         </div>
         <button
@@ -251,7 +255,7 @@
         document.querySelectorAll(".edit-btn").forEach((btn) => {
           btn.onclick = () => startEditAddress(btn.dataset.idx);
         });
-        
+
         document.querySelectorAll(".delete-btn").forEach((btn) => {
           btn.onclick = () => deleteAddress(btn.dataset.idx);
         });
@@ -305,6 +309,35 @@
             console.error("Error deleting address:", error);
           });
       };
+
+      const getCountries = () => {
+        axios
+          .get(
+            "https://core.hisend.hunnovate.com/api/v1/countries?api_key=lntX8uGyhVAYkJQTLMHDDXGQ"
+          )
+          .then((response) => {
+            const countryList = response.data.data;
+            const countrySelect = document.getElementById("country");
+            // take advantage of html DataList to populate the country options
+            const dataList = document.createElement("datalist");
+            dataList.setAttribute("id", "country-list");
+            countrySelect.setAttribute("list", "country-list");
+            countryList.forEach((country) => {
+              const option = document.createElement("option");
+              option.value = country.name;
+              option.setAttribute("data-code", country.code);
+              dataList.appendChild(option);
+            });
+            countrySelect.appendChild(dataList);
+          })
+          .catch((error) => {
+            console.error("Error fetching countries:", error);
+          });
+      }
+
+      window.addEventListener("DOMContentLoaded", () => {
+        getCountries();
+      });
     </script>
   </body>
 </html>
